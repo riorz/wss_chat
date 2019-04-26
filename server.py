@@ -1,32 +1,37 @@
+#!/usr/bin/env python
+
 import asyncio
-import websockets
 import pathlib
 import ssl
+import websockets
 import logging
-
-ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
-ssl_context.load_verify_locations(
-    pathlib.Path(__file__).with_name('server.pem'))
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
 
-async def start_server(path, port, ssl_context):
-    logger.info('Start server...')
-    conn = await websockets.serve(hello, path, port, ssl=ssl_context)
-    return conn
-
-async def hello(websocket):
+async def hello(websocket, path):
     name = await websocket.recv()
-    print(f'< {name}')
+    print(f"< {name}")
 
-    await websocket.send(name)
-    print(f'> {name}')
+    greeting = f"Hello {name}!"
 
-    greeting = await websocket.recv()
-    print(f'< {greeting}')
+    await websocket.send(greeting)
+    print(f"> {greeting}")
 
-# start_server = websockets.serve(hello, 'localhost', 1234, ssl=ssl_context)
 
-asyncio.get_event_loop().run_until_complete(start_server('localhost', '1234', ssl_context))
+async def echo(websocket, path):
+    async for message in websocket:
+        await websocket.send(message)
+        print(message)
+
+ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+ssl_context.load_cert_chain(
+    pathlib.Path(__file__).with_name('server.pem'),
+    pathlib.Path(__file__).with_name('server.key'))
+
+start_server = websockets.serve(
+    echo, 'localhost', 8765, ssl=ssl_context)
+
+logger.info('start server...')
+asyncio.get_event_loop().run_until_complete(start_server)
 asyncio.get_event_loop().run_forever()
