@@ -7,22 +7,28 @@ import websockets
 import logging
 
 logger = logging.getLogger(__name__)
-logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
+logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)
 
-async def hello(websocket, path):
-    name = await websocket.recv()
-    print(f"< {name}")
-
-    greeting = f"Hello {name}!"
-
-    await websocket.send(greeting)
-    print(f"> {greeting}")
-
+USERS = set()
 
 async def echo(websocket, path):
-    async for message in websocket:
-        await websocket.send(message)
-        print(message)
+    # Register.
+    USERS.add(websocket)
+    try:
+        async for message in websocket:
+            print('receive:', message)
+            logger.info(f'receive message from websocket: {websocket}, broadcasting...')
+            await broadcast(message, websocket)
+    finally:
+        USERS.remove(websocket)
+
+
+async def broadcast(message, websocket):
+    if USERS:       # asyncio.wait doesn't accept an empty list
+        for user in USERS:
+            await user.send(message)
+        #await asyncio.wait([user.send(message) for user in USERS])
+
 
 ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
 ssl_context.load_cert_chain(
