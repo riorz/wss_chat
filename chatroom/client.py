@@ -5,8 +5,8 @@ import pathlib
 import ssl
 import websockets
 import logging
-import sys
 import functools
+from prompt import AsyncPrompt
 
 logging.basicConfig()
 logger = logging.getLogger('client')
@@ -15,22 +15,7 @@ ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
 ssl_context.load_verify_locations(
     pathlib.Path(__file__).with_name('server.pem'))
 
-
-class Prompt:
-    def __init__(self, loop=None):
-        self.loop = loop or asyncio.get_event_loop()
-        self.q = asyncio.Queue(loop=self.loop)
-        self.loop.add_reader(sys.stdin, self.got_input)
-
-    def got_input(self):
-        asyncio.ensure_future(self.q.put(sys.stdin.readline()), loop=self.loop)
-
-    async def __call__(self, msg, end='\n', flush=False):
-        print(msg, end=end, flush=flush)
-        return (await self.q.get()).rstrip('\n')
-
-
-prompt = Prompt()
+prompt = AsyncPrompt()
 raw_input = functools.partial(prompt, end='', flush=True)
 
 
