@@ -28,11 +28,12 @@ async def echo(websocket, path):
 
 async def register(websocket):
     """ Add connection to user list. """
-    await websocket.send('Please enter your name: ')
+    await websocket.send('Please enter your name')
     name = await websocket.recv()
     user = User(name, websocket)
     logger.info(f'Register user {name}: {websocket}')
     USERS.add(user)
+    await websocket.send(f'Hi, {name}')
     return user
 
 

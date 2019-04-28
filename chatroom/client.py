@@ -7,6 +7,8 @@ import websockets
 import logging
 import functools
 from prompt import AsyncPrompt
+from display import Display
+
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger('client')
@@ -24,22 +26,25 @@ class Client:
         self.url = f'wss://{path}:{port}'
         self.ssl = ssl
         self.loop = loop
+        self.display = Display()
 
     async def connect(self):
         logger.info(f'Connecting to {self.url}...')
         self.websocket = await websockets.connect(self.url, ssl=self.ssl)
 
     async def input_message(self):
-        input = await raw_input('> ')
+        self.display.wait_input()
+        input = await raw_input('you: ')
         await self.websocket.send(input)
 
     async def print_message(self):
         msg = await self.websocket.recv()
-        print(f'\n< {msg}')
+        self.display.print(msg)
 
     async def run(self):
         stop = False
         await self.connect()
+        self.display.clear()
         while not stop:
             try:
                 on_input = asyncio.create_task(self.input_message())
