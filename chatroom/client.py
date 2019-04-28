@@ -8,7 +8,7 @@ import logging
 import functools
 from prompt import AsyncPrompt
 
-logging.basicConfig()
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger('client')
 
 ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
@@ -19,50 +19,43 @@ prompt = AsyncPrompt()
 raw_input = functools.partial(prompt, end='', flush=True)
 
 
-async def start_server(path, port, ssl):
-    url = f'wss://{path}:{port}'
-    websocket = await websockets.connect(url, ssl=ssl)
-    return websocket
+class Client:
+    def __init__(self, path, port, ssl, loop):
+        self.url = f'wss://{path}:{port}'
+        self.ssl = ssl
+        self.loop = loop
 
+    async def connect(self):
+        logger.info(f'Connecting to {self.url}...')
+        self.websocket = await websockets.connect(self.url, ssl=self.ssl)
 
-async def greet(websocket):
-    name = input("What's your name? ")
+    async def input_message(self):
+        input = await raw_input('> ')
+        await self.websocket.send(input)
 
-    await websocket.send(name)
-    print(f"> {name}")
+    async def print_message(self):
+        msg = await self.websocket.recv()
+        print(f'\n< {msg}')
 
-    greeting = await websocket.recv()
-    print(f"< {greeting}")
-
-
-async def run(websocket):
-    while True:
-        try:
-            coro1 = asyncio.create_task(input_message(websocket))
-            coro2 = asyncio.create_task(print_message(websocket))
-            _, pending = await asyncio.wait({coro1, coro2}, return_when=asyncio.FIRST_COMPLETED)
-            for task in pending:
-                task.cancel()
-        except KeyboardInterrupt:
-            print(' i tihnk i got here?')
-            await websocket.close()
-            break
-    logger.info('bye')
-
-
-async def input_message(websocket):
-    input = await raw_input('>')
-    await websocket.send(input)
-
-
-async def print_message(websocket):
-    msg = await websocket.recv()
-    print(f'\nreceive message: {msg}')
+    async def run(self):
+        stop = False
+        await self.connect()
+        while not stop:
+            try:
+                on_input = asyncio.create_task(self.input_message())
+                on_receive = asyncio.create_task(self.print_message())
+                _, pending = await asyncio.wait(
+                    {on_input, on_receive},
+                    return_when=asyncio.FIRST_COMPLETED
+                )
+                for task in pending:
+                    task.cancel()
+            except KeyboardInterrupt:
+                logger.info('user shut down')
+                stop = True
+                break
 
 
 loop = asyncio.get_event_loop()
-tasks = start_server('localhost', '8765', ssl_context)
-conn = loop.run_until_complete(tasks)
-loop.run_until_complete(greet(conn))
-loop.run_until_complete(run(conn))
-loop.run_forever()
+client = Client('localhost', '8765', ssl_context, loop)
+loop.run_until_complete(client.run())
