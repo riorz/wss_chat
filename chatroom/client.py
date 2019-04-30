@@ -8,9 +8,14 @@ import logging
 import functools
 from prompt import AsyncPrompt
 from display import Display
+import json
+import time
 
-
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(
+    filename='client.log',
+    level=logging.INFO,
+    format='%(asctime)s %(message)s',
+    datefmt='%m/%d/%Y %I:%M:%S %p')
 logger = logging.getLogger('client')
 
 ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
@@ -37,9 +42,14 @@ class Client:
         input = await raw_input('you: ')
         await self.websocket.send(input)
 
-    async def print_message(self):
+    async def receive_message(self):
         msg = await self.websocket.recv()
-        self.display.print(msg)
+        logger.info(f'receive message: {msg}')
+        msg = json.loads(msg)
+        if msg['action'] == 'info':
+            self.display.print(f'server: {msg["message"]}')
+        elif msg['action'] == 'broadcast':
+            self.display.print(f'{msg["sender"]}: {msg["message"]}')
 
     async def run(self):
         stop = False
@@ -48,7 +58,7 @@ class Client:
         while not stop:
             try:
                 on_input = asyncio.create_task(self.input_message())
-                on_receive = asyncio.create_task(self.print_message())
+                on_receive = asyncio.create_task(self.receive_message())
                 _, pending = await asyncio.wait(
                     {on_input, on_receive},
                     return_when=asyncio.FIRST_COMPLETED
