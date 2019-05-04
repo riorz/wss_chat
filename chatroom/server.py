@@ -1,9 +1,5 @@
-#!/usr/bin/env python
-
 import json
 import asyncio
-import pathlib
-import ssl
 import websockets
 import logging
 from collections import namedtuple
@@ -48,15 +44,3 @@ class Server:
         return websockets.serve(
             self.run, self.host, self.port, ssl=self.ssl
         )
-
-
-ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
-ssl_context.load_cert_chain(
-    pathlib.Path(__file__).with_name('server.pem'),
-    pathlib.Path(__file__).with_name('server.key'))
-
-
-server = Server('127.0.0.1', '8765', ssl=ssl_context)
-loop = asyncio.get_event_loop()
-loop.run_until_complete(server.start_server())
-loop.run_forever()

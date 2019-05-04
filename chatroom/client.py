@@ -1,13 +1,9 @@
-#!/usr/bin/env python
-
 import asyncio
-import pathlib
-import ssl
 import websockets
 import logging
 import functools
-from prompt import AsyncPrompt
-from display import Display
+from .prompt import AsyncPrompt
+from .display import Display
 import json
 import time
 
@@ -18,13 +14,8 @@ logging.basicConfig(
     datefmt='%m/%d/%Y %I:%M:%S %p')
 logger = logging.getLogger('client')
 
-ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
-ssl_context.load_verify_locations(
-    pathlib.Path(__file__).with_name('server.pem'))
-
 prompt = AsyncPrompt()
 raw_input = functools.partial(prompt, end='', flush=True)
-
 
 class Client:
     def __init__(self, path, port, ssl, handle, loop):
@@ -71,8 +62,3 @@ class Client:
                 logger.info('user shut down')
                 stop = True
                 break
-
-
-loop = asyncio.get_event_loop()
-client = Client('localhost', '8765', ssl_context, 'anonymous1', loop)
-loop.run_until_complete(client.run())
