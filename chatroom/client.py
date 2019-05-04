@@ -27,15 +27,17 @@ raw_input = functools.partial(prompt, end='', flush=True)
 
 
 class Client:
-    def __init__(self, path, port, ssl, loop):
+    def __init__(self, path, port, ssl, handle, loop):
         self.url = f'wss://{path}:{port}'
         self.ssl = ssl
         self.loop = loop
+        self.handle = handle
         self.display = Display()
 
     async def connect(self):
         logger.info(f'Connecting to {self.url}...')
-        self.websocket = await websockets.connect(self.url, ssl=self.ssl)
+        self.websocket = await websockets.connect(self.url, ssl=self.ssl,
+                                                  extra_headers={'handle': self.handle})
 
     async def input_message(self):
         self.display.wait_input()
@@ -72,5 +74,5 @@ class Client:
 
 
 loop = asyncio.get_event_loop()
-client = Client('localhost', '8765', ssl_context, loop)
+client = Client('localhost', '8765', ssl_context, 'anonymous1', loop)
 loop.run_until_complete(client.run())

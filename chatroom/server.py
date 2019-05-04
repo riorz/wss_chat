@@ -13,13 +13,12 @@ logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)
 
 class Server:
     USERS = dict() # Record all connected websockets.
-    def __init__(self, path, port, ssl):
-        self.path = path
+    def __init__(self, host, port, ssl):
+        self.host = host
         self.port = port
         self.ssl = ssl
 
     async def run(self, websocket, path):
-        logger.info(f'Recieve connection from {path}')
         await self.register(websocket)
         try:
             async for message in websocket:
@@ -31,9 +30,7 @@ class Server:
 
     async def register(self, websocket):
         """ Add connection to user list. """
-        msg = json.dumps({'action': 'info', 'message': 'Please enter your name'})
-        await websocket.send(msg)
-        name = await websocket.recv()
+        name = websocket.request_headers['handle']
         logger.info(f'Register user {name}: {websocket}')
         self.USERS[websocket] = name
         ok = json.dumps({'action': 'info', 'message': f'Hi, {name}'})
@@ -49,7 +46,7 @@ class Server:
     def start_server(self):
         logger.info('Starting server...')
         return websockets.serve(
-            self.run, self.path, self.port, ssl=ssl_context
+            self.run, self.host, self.port, ssl=self.ssl
         )
 
 
