@@ -32,7 +32,7 @@ class Client:
 
     async def input_message(self):
         self.display.wait_input()
-        input = await raw_input('you: ')
+        input = await raw_input(f'{self.handle}: ')
         await self.websocket.send(input)
 
     async def receive_message(self):

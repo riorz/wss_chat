@@ -8,15 +8,15 @@ from chatroom import server, client
 
 parser = argparse.ArgumentParser(description='Start a server/client')
 
-subparsers = parser.add_subparsers(dest='app', required=True)
+subparsers = parser.add_subparsers(dest='action', required=True)
 
-client_parser = subparsers.add_parser('client')
+client_parser = subparsers.add_parser('connect')
 client_parser.add_argument('--host', dest='host', type=str, default='localhost')
 client_parser.add_argument('--bind-port', dest='port', type=int, default=8000)
 client_parser.add_argument('--ca-file', type=pathlib.Path, required=True)
 client_parser.add_argument('--handle', dest='handle', type=str, required=True)
 
-server_parser = subparsers.add_parser('server')
+server_parser = subparsers.add_parser('serve')
 server_parser.add_argument('--bind-ip', dest='ip', type=str, default='0.0.0.0')
 server_parser.add_argument('--bind-port', dest='port', type=int, default=8000)
 server_parser.add_argument('--ca-file', type=pathlib.Path, required=True)
@@ -39,13 +39,17 @@ def get_ssl_context(app_type, path):
 
 
 args = parser.parse_args()
-ssl_context = get_ssl_context(args.app, args.ca_file)
+app_type = {
+    'serve': 'server',
+    'connect': 'client',
+}[args.action]
+ssl_context = get_ssl_context(app_type, args.ca_file)
 loop = asyncio.get_event_loop()
 
-if args.app == 'server':
+if app_type == 'server':
     app = server.Server(args.ip, args.port, ssl=ssl_context)
     loop.run_until_complete(app.start_server())
     loop.run_forever()
-elif args.app == 'client':
+elif app_type == 'client':
     app = client.Client(args.host, args.port, ssl_context, args.handle, loop)
     loop.run_until_complete(app.run())
