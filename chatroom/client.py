@@ -5,17 +5,12 @@ import functools
 from .prompt import AsyncPrompt
 from .display import Display
 import json
-import time
 
-logging.basicConfig(
-    filename='client.log',
-    level=logging.INFO,
-    format='%(asctime)s %(message)s',
-    datefmt='%m/%d/%Y %I:%M:%S %p')
-logger = logging.getLogger('client')
+logger = logging.getLogger(f'{__name__}.client')
 
 prompt = AsyncPrompt()
 raw_input = functools.partial(prompt, end='', flush=True)
+
 
 class Client:
     def __init__(self, path, port, ssl, handle, loop):
@@ -36,19 +31,22 @@ class Client:
         await self.websocket.send(input)
 
     async def receive_message(self):
-        msg = await self.websocket.recv()
-        logger.info(f'receive message: {msg}')
-        msg = json.loads(msg)
-        if msg['action'] == 'info':
-            self.display.print(f'server: {msg["message"]}')
-        elif msg['action'] == 'broadcast':
-            self.display.print(f'{msg["sender"]}: {msg["message"]}')
+        try:
+            msg = await self.websocket.recv()
+            logger.info(f'receive message: {msg}')
+            msg = json.loads(msg)
+            if msg['action'] == 'info':
+                self.display.print(f'server: {msg["message"]}')
+            elif msg['action'] == 'broadcast':
+                self.display.print(f'{msg["sender"]}: {msg["message"]}')
+        except websockets.exceptions.ConnectionClosed as e:
+            logger.info(f'Connection closed: <{e.code}>')
+            self.loop.stop()
 
     async def run(self):
-        stop = False
         await self.connect()
         self.display.clear()
-        while not stop:
+        while True:
             try:
                 on_input = asyncio.create_task(self.input_message())
                 on_receive = asyncio.create_task(self.receive_message())
@@ -58,7 +56,5 @@ class Client:
                 )
                 for task in pending:
                     task.cancel()
-            except KeyboardInterrupt:
-                logger.info('user shut down')
-                stop = True
-                break
+            except RuntimeError:
+                logger.info('Stop running')

@@ -1,14 +1,15 @@
 import json
-import asyncio
 import websockets
 import logging
-from collections import namedtuple
 
-logger = logging.getLogger(__name__)
-logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)
+logger = logging.getLogger(f'{__name__}.server')
+ch = logging.StreamHandler()
+logger.addHandler(ch)
+
 
 class Server:
-    USERS = dict() # Record all connected websockets.
+    USERS = dict()  # Record all connected websockets.
+
     def __init__(self, host, port, ssl):
         self.host = host
         self.port = port
@@ -18,7 +19,8 @@ class Server:
         await self.register(websocket)
         try:
             async for message in websocket:
-                logger.info(f'receive message from websocket: {websocket}, broadcasting...')
+                logger.info(
+                    f'receive message from websocket: {websocket}, broadcasting...')
                 await self.broadcast(message, websocket, self.USERS[websocket])
         # XXX: add client close exception here. websockets.exceptions.ConnectionClosed
         finally:
@@ -36,7 +38,8 @@ class Server:
         """ Send message to all connected client. """
         if self.USERS:       # asyncio.wait doesn't accept an empty list
             for user in self.USERS.keys():
-                msg = json.dumps({'action': 'broadcast', 'message': message, 'sender': sender})
+                msg = json.dumps(
+                    {'action': 'broadcast', 'message': message, 'sender': sender})
                 await user.send(msg)
 
     def start_server(self):
