@@ -22,8 +22,10 @@ class Server:
                 logger.info(
                     f'receive message from websocket: {websocket}, broadcasting...')
                 await self.broadcast(message, websocket, self.USERS[websocket])
-        # XXX: add client close exception here. websockets.exceptions.ConnectionClosed
+        except websockets.exceptions.ConnectionClosed as e:
+            logger.info(f'{websocket} connection closed abnormally. <{e.code}>')
         finally:
+            logger.info(f'{self.USERS[websocket]} closed connection.')
             self.USERS.pop(websocket)
 
     async def register(self, websocket):

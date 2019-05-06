@@ -28,6 +28,11 @@ class Client:
     async def input_message(self):
         self.display.wait_input()
         input = await raw_input(f'{self.handle}: ')
+        if input == '!quit':
+            await self.websocket.close(reason='bye')
+            self.loop.stop()
+            logger.info('User quit.')
+            return
         await self.websocket.send(input)
 
     async def receive_message(self):
@@ -40,7 +45,7 @@ class Client:
             elif msg['action'] == 'broadcast':
                 self.display.print(f'{msg["sender"]}: {msg["message"]}')
         except websockets.exceptions.ConnectionClosed as e:
-            logger.info(f'Connection closed: <{e.code}>')
+            logger.info(f'Connection closed: <{e.code}>: {e.reason}')
             self.loop.stop()
 
     async def run(self):
