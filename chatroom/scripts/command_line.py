@@ -65,4 +65,11 @@ def main():
     elif app_type == 'client':
         logger.info('Start a client...')
         app = client.Client(args.host, args.port, ssl_context, args.handle, loop)
-        loop.run_until_complete(app.run())
+        try:
+            loop.run_until_complete(app.run())
+        except KeyboardInterrupt:
+            logger.info('Keyboard Interrupted.')
+        finally:
+            logger.info('Closing client')
+            loop.run_until_complete(app.close())
+            loop.close()

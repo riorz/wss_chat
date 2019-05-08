@@ -10,7 +10,7 @@ logger.addHandler(ch)
 class Server:
     USERS = dict()  # Record all connected websockets.
 
-    def __init__(self, host, port, ssl):
+    def __init__(self, host: str, port: int, ssl):
         self.host = host
         self.port = port
         self.ssl = ssl
