@@ -3,6 +3,7 @@ from collections import namedtuple
 
 Pos = namedtuple('Pos', ['x', 'y'])
 
+
 class Display:
     def __init__(self):
         self.term = term = Terminal()
@@ -16,7 +17,7 @@ class Display:
     def clear(self):
         print(self.term.clear)
         with self.term.location(0, self.input_box.y + 1):
-                print('=' * self.term.width, end='')
+            print('=' * self.term.width, end='')
 
     def print(self, message, wait_input=True):
         print(self.term.move(self.output_cursor.x, self.output_cursor.y) + message)

@@ -4,6 +4,7 @@ import argparse
 import pathlib
 import ssl
 import asyncio
+import logging
 from chatroom import server, client
 
 
@@ -24,6 +25,14 @@ def get_ssl_context(app_type, path):
 
 
 def main():
+    logging.basicConfig(
+        filename='chatroom.log',
+        level=logging.INFO,
+        format='%(asctime)s %(name)s %(message)s',
+        datefmt='%m/%d/%Y %I:%M:%S'
+    )
+    logger = logging.getLogger(__name__)
+
     parser = argparse.ArgumentParser(description='Start a server/client')
     subparsers = parser.add_subparsers(dest='action', required=True)
 
@@ -49,9 +58,18 @@ def main():
     loop = asyncio.get_event_loop()
 
     if app_type == 'server':
+        logger.info('Start a server...')
         app = server.Server(args.ip, args.port, ssl=ssl_context)
         loop.run_until_complete(app.start_server())
         loop.run_forever()
     elif app_type == 'client':
+        logger.info('Start a client...')
         app = client.Client(args.host, args.port, ssl_context, args.handle, loop)
-        loop.run_until_complete(app.run())
+        try:
+            loop.run_until_complete(app.run())
+        except KeyboardInterrupt:
+            logger.info('Keyboard Interrupted.')
+        finally:
+            logger.info('Closing client')
+            loop.run_until_complete(app.close())
+            loop.close()
