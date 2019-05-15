@@ -1,6 +1,7 @@
 import sys
 import asyncio
 
+
 class AsyncPrompt:
     """ A non-blocking prompt
         Ref: https://stackoverflow.com/questions/35223896/listen-to-keypress-with-asyncio

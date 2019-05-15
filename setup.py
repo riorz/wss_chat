@@ -14,4 +14,5 @@ setup(
             'chatroom = chatroom.command_line:main',
         ],
     },
+    tests_require=["pytest"],
 )

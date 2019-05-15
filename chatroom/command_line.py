@@ -26,7 +26,7 @@ def get_ssl_context(app_type, path, **kwargs):
 
     if app_type == 'server':
         ssl_context.load_cert_chain(path)
-        if kwargs['client_cert']:
+        if kwargs and kwargs['client_cert']:
             logger.info('client authentication needed.')
             ssl_context.load_verify_locations(capath=kwargs['client_cert'])
             ssl_context.verify_mode = ssl.CERT_REQUIRED
@@ -34,7 +34,7 @@ def get_ssl_context(app_type, path, **kwargs):
 
     elif app_type == 'client':
         ssl_context.load_verify_locations(path)
-        if kwargs['client_cert']:
+        if kwargs and kwargs['client_cert']:
             ssl._create_default_https_context = ssl._create_unverified_context
             ssl_context.load_cert_chain(kwargs['client_cert'])
 

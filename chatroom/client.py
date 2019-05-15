@@ -9,9 +9,6 @@ import json
 
 logger = logging.getLogger(f'{__name__}.client')
 
-prompt = AsyncPrompt()
-raw_input = functools.partial(prompt, end='', flush=True)
-
 
 class Client:
     def __init__(self, path: str, port: int, ssl, handle: str, loop):
@@ -21,6 +18,7 @@ class Client:
         self.handle = handle
         self.display = Display()
         self.closed = False
+        self.raw_input = functools.partial(AsyncPrompt(), end='', flush=True)
 
     async def connect(self):
         logger.info(f'Connecting to {self.url}...')
@@ -29,7 +27,7 @@ class Client:
 
     async def input_message(self):
         self.display.wait_input()
-        input = await raw_input(f'{self.handle}: ')
+        input = await self.raw_input(f'{self.handle}: ')
         if input == '!quit':
             await self.websocket.close(reason='bye')
             self.closed = True
