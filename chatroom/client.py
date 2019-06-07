@@ -3,8 +3,7 @@ import websockets
 import logging
 import functools
 from contextlib import suppress
-from .prompt import AsyncPrompt
-from .display import Display
+from .display import Display, AsyncPrompt
 import json
 
 logger = logging.getLogger(f'{__name__}.client')

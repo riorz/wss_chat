@@ -15,6 +15,21 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+_CLIENT_ARGS = {
+    '--host': {'dest': 'host', 'type': str, 'default': 'localhost'},
+    '--bind-port': {'dest': 'port', 'type': int, 'default': 8000},
+    '--ca-file': {'type': pathlib.Path, 'required': True},
+    '--handle': {'dest': 'handle', 'type': str, 'required': True},
+    '--client-cert': {'type': pathlib.Path, 'required': False},
+}
+
+_SERVER_ARGS = {
+    '--bind-ip': {'dest': 'ip', 'type': str, 'default': '0.0.0.0'},
+    '--bind-port': {'dest': 'port', 'type': int, 'default': 8000},
+    '--ca-file': {'type': pathlib.Path, 'required': True},
+    '--allowed-clients': {'dest': 'client_cert', 'type': pathlib.Path, 'required': False},
+}
+
 
 def get_ssl_context(app_type, path, **kwargs):
     """ Return ssl_context by type """
@@ -41,33 +56,26 @@ def get_ssl_context(app_type, path, **kwargs):
     return ssl_context
 
 
-def main():
+def get_parsed_args():
     parser = argparse.ArgumentParser(description='Start a server/client')
     subparsers = parser.add_subparsers(dest='action', required=True)
 
     # client commands
     client_parser = subparsers.add_parser('connect')
-    client_parser.add_argument(
-        '--host', dest='host', type=str, default='localhost')
-    client_parser.add_argument(
-        '--bind-port', dest='port', type=int, default=8000)
-    client_parser.add_argument('--ca-file', type=pathlib.Path, required=True)
-    client_parser.add_argument(
-        '--handle', dest='handle', type=str, required=True)
-    client_parser.add_argument(
-        '--client-cert', type=pathlib.Path, required=False)
+    for arg, config in _CLIENT_ARGS.items():
+        client_parser.add_argument(arg, **config)
 
     # server commands
     server_parser = subparsers.add_parser('serve')
-    server_parser.add_argument(
-        '--bind-ip', dest='ip', type=str, default='0.0.0.0')
-    server_parser.add_argument(
-        '--bind-port', dest='port', type=int, default=8000)
-    server_parser.add_argument('--ca-file', type=pathlib.Path, required=True)
-    server_parser.add_argument('--allowed-clients', type=pathlib.Path,
-                               dest='client_cert', required=False)
+    for arg, config in _SERVER_ARGS.items():
+        server_parser.add_argument(arg, **config)
 
-    args = parser.parse_args()
+    return parser.parse_args()
+
+
+def main():
+    args = get_parsed_args()
+
     app_type = {
         'serve': 'server',
         'connect': 'client',
